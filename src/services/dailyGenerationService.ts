@@ -1,7 +1,9 @@
 import sequelize from "../config/database"
 import Citation from "../models/Citation"
+import Post from "../models/Post"
 import aiService from "./aiService"
 import imageService from "./imageService"
+import instagramService, { InstagramCredentials } from "./instagramService"
 
 export interface DailyConfig {
   totalCitations: number
@@ -14,6 +16,8 @@ export interface DailyConfig {
   language: string
   minQualityScore: number
   generateImages: boolean
+  publishToInstagram: boolean
+  instagramCredentials?: InstagramCredentials
 }
 
 // Configuration par défaut pour la génération quotidienne
@@ -29,6 +33,7 @@ export const DEFAULT_CONFIG: DailyConfig = {
   language: "fr",
   minQualityScore: 0.6,
   generateImages: true,
+  publishToInstagram: false, // Désactivé par défaut
 }
 
 export class DailyGenerationService {
@@ -38,10 +43,21 @@ export class DailyGenerationService {
     saved: 0,
     failed: 0,
     withImages: 0,
+    published: 0,
+    publishFailed: 0,
   }
 
-  constructor(config: DailyConfig = DEFAULT_CONFIG) {
-    this.config = config
+  constructor(config: Partial<DailyConfig> = {}) {
+    this.config = { ...DEFAULT_CONFIG, ...config }
+
+    // Configuration automatique des credentials Instagram depuis l'environnement
+    if (!this.config.instagramCredentials && instagramService.isConfigured()) {
+      this.config.instagramCredentials = {
+        accessToken: process.env.INSTAGRAM_ACCESS_TOKEN!,
+        accountId: process.env.INSTAGRAM_ACCOUNT_ID!,
+      }
+      this.config.publishToInstagram = true
+    }
   }
 
   async generate(): Promise<typeof this.stats> {
@@ -52,8 +68,19 @@ export class DailyGenerationService {
       } thèmes`
     )
 
+    if (this.config.publishToInstagram) {
+      console.log("📱 Publication Instagram activée")
+    }
+
     // Réinitialiser les stats
-    this.stats = { generated: 0, saved: 0, failed: 0, withImages: 0 }
+    this.stats = {
+      generated: 0,
+      saved: 0,
+      failed: 0,
+      withImages: 0,
+      published: 0,
+      publishFailed: 0,
+    }
 
     try {
       // Initialiser la base de données
@@ -79,19 +106,27 @@ export class DailyGenerationService {
     themeConfig: { count: number; style?: string }
   ): Promise<void> {
     console.log(
-      `\n🎯 Génération pour le thème: ${theme} (${themeConfig.count} citations)`
+      `\n🎨 Génération pour le thème "${theme}" (${themeConfig.count} citations)`
     )
 
     try {
-      // Générer les citations via IA
-      const generatedCitations = await aiService.generateCitations({
-        theme,
-        language: this.config.language,
-        count: themeConfig.count,
-        style: themeConfig.style as any,
-      })
+      // Générer les citations avec l'IA
+      const generatedCitations = await aiService.generateCitations(
+        {
+          theme,
+          language: this.config.language,
+          count: themeConfig.count,
+          style: themeConfig.style as
+            | "motivational"
+            | "philosophical"
+            | "practical"
+            | "inspirational",
+        },
+        "openai"
+      )
 
-      console.log(`   📝 ${generatedCitations.length} citations générées par l'IA`)
+      this.stats.generated += generatedCitations.length
+      console.log(`   📝 ${generatedCitations.length} citations générées`)
 
       // Filtrer par qualité
       const qualityCitations = generatedCitations.filter(
@@ -99,15 +134,13 @@ export class DailyGenerationService {
       )
 
       console.log(
-        `   ⭐ ${qualityCitations.length} citations passent le filtre qualité (>= ${this.config.minQualityScore})`
+        `   ✨ ${qualityCitations.length}/${generatedCitations.length} citations passent le filtre qualité (${this.config.minQualityScore})`
       )
 
-      // Sauvegarder en base de données
-      for (const citation of qualityCitations) {
-        await this.saveCitation(citation, theme)
+      // Sauvegarder les citations de qualité
+      for (const generatedCitation of qualityCitations) {
+        await this.saveCitation(generatedCitation, theme)
       }
-
-      this.stats.generated += generatedCitations.length
     } catch (error) {
       console.error(`   ❌ Erreur pour le thème ${theme}:`, error)
       this.stats.failed += themeConfig.count
@@ -143,6 +176,15 @@ export class DailyGenerationService {
         await this.generateImages(citation)
       }
 
+      // Publier sur Instagram si configuré
+      if (
+        this.config.publishToInstagram &&
+        this.config.instagramCredentials &&
+        citation.imagePath
+      ) {
+        await this.publishToInstagram(citation)
+      }
+
       this.stats.saved++
     } catch (error) {
       console.error(`   ❌ Erreur sauvegarde citation:`, error)
@@ -152,59 +194,148 @@ export class DailyGenerationService {
 
   private async generateImages(citation: Citation): Promise<void> {
     try {
-      console.log(`   🖼️  Génération d'images pour citation ${citation.id}...`)
+      console.log(`   🎨 Génération d'images pour citation ${citation.id}`)
 
-      // Générer plusieurs variations d'images
-      const variations = await imageService.generateVariations({
+      const citationData = {
         content: citation.content,
         author: citation.author,
         theme: citation.theme,
-      })
+        hashtags: citation.hashtags,
+      }
 
-      // Sauvegarder le chemin de la première image
+      // Générer plusieurs variations d'images
+      const variations = await imageService.generateVariations(citationData, [
+        "minimal",
+        "gradient",
+        "modern",
+      ])
+
       if (variations.length > 0) {
-        citation.imagePath = variations[0].path
-        citation.imageMetadata = {
-          variations: variations.map((v) => ({
-            path: v.path,
-            template: v.metadata.template,
-            generatedAt: new Date().toISOString(),
-          })),
-        }
-        await citation.save()
+        // Utiliser la première image comme image principale
+        const mainImage = variations[0]
 
-        console.log(`   ✅ ${variations.length} images générées`)
+        await citation.update({
+          imagePath: mainImage.path,
+          imageMetadata: {
+            template: mainImage.metadata.template,
+            variations: variations.map((v) => ({
+              filename: v.filename,
+              path: v.path,
+              metadata: v.metadata,
+            })),
+          },
+        })
+
+        console.log(`   🖼️  ${variations.length} variations d'images générées`)
         this.stats.withImages++
       }
     } catch (error) {
-      console.error(
-        `   ⚠️  Erreur génération images pour citation ${citation.id}:`,
-        error
+      console.error(`   ❌ Erreur génération images:`, error)
+      // Ne pas faire échouer le processus pour une erreur d'image
+    }
+  }
+
+  private async publishToInstagram(citation: Citation): Promise<void> {
+    try {
+      console.log(`   📱 Publication Instagram pour citation ${citation.id}`)
+
+      if (!this.config.instagramCredentials) {
+        throw new Error("Credentials Instagram non configurés")
+      }
+
+      // Générer des hashtags automatiques
+      const hashtags = instagramService.generateHashtags(
+        citation.theme,
+        citation.language
       )
-      // Ne pas faire échouer le processus si seules les images échouent
+
+      // Préparer la légende
+      let caption = citation.content
+      if (citation.author) {
+        caption += `\n\n— ${citation.author}`
+      }
+
+      // Créer le post en base
+      const post = await Post.create({
+        citation_id: citation.id,
+        image_url: `/images/generated/${citation.imagePath?.split("/").pop()}`,
+        image_path: citation.imagePath!,
+        template_used: (citation.imageMetadata as any)?.template || "minimal",
+        status: "scheduled",
+        scheduled_for: new Date(),
+        caption: caption,
+        hashtags: hashtags,
+        retry_count: 0,
+      })
+
+      try {
+        // Publier sur Instagram
+        const result = await instagramService.publishImage(
+          this.config.instagramCredentials,
+          {
+            caption: caption,
+            imagePath: citation.imagePath!,
+            hashtags: hashtags,
+          }
+        )
+
+        // Mettre à jour le post avec les informations Instagram
+        await post.update({
+          instagram_post_id: result.id,
+          status: "published",
+          published_at: new Date(),
+        })
+
+        // Mettre à jour la citation
+        await citation.update({
+          status: "published",
+          published_at: new Date(),
+        })
+
+        console.log(`   🎉 Publié sur Instagram: ${result.permalink}`)
+        this.stats.published++
+      } catch (publishError) {
+        // Mettre à jour le post avec l'erreur
+        await post.update({
+          status: "failed",
+          error_message:
+            publishError instanceof Error ? publishError.message : "Erreur inconnue",
+          retry_count: post.retry_count + 1,
+        })
+
+        console.error(`   ❌ Échec publication Instagram:`, publishError)
+        this.stats.publishFailed++
+      }
+    } catch (error) {
+      console.error(`   ❌ Erreur publication Instagram:`, error)
+      this.stats.publishFailed++
     }
   }
 
   private displayStats(): void {
-    console.log("\n" + "=".repeat(50))
-    console.log("📊 STATISTIQUES DE GÉNÉRATION QUOTIDIENNE")
-    console.log("=".repeat(50))
-    console.log(`✅ Citations générées par l'IA: ${this.stats.generated}`)
-    console.log(`💾 Citations sauvées en base: ${this.stats.saved}`)
-    console.log(`🖼️  Citations avec images: ${this.stats.withImages}`)
-    console.log(`❌ Échecs: ${this.stats.failed}`)
-    console.log(
-      `📈 Taux de réussite: ${Math.round(
-        (this.stats.saved / this.stats.generated) * 100
-      )}%`
-    )
-    console.log("=".repeat(50))
+    console.log("\n📊 === STATISTIQUES FINALES ===")
+    console.log(`📝 Citations générées: ${this.stats.generated}`)
+    console.log(`💾 Citations sauvées: ${this.stats.saved}`)
+    console.log(`🖼️  Avec images: ${this.stats.withImages}`)
 
-    if (this.stats.saved === 0) {
-      console.log("⚠️  ATTENTION: Aucune citation sauvée!")
-    } else {
-      console.log(`🎉 Génération quotidienne terminée avec succès!`)
+    if (this.config.publishToInstagram) {
+      console.log(`📱 Publiées Instagram: ${this.stats.published}`)
+      console.log(`❌ Échecs publication: ${this.stats.publishFailed}`)
     }
+
+    console.log(`❌ Échecs génération: ${this.stats.failed}`)
+
+    const successRate =
+      this.stats.generated > 0 ? (this.stats.saved / this.stats.generated) * 100 : 0
+    console.log(`📈 Taux de réussite: ${successRate.toFixed(1)}%`)
+
+    if (this.config.publishToInstagram) {
+      const publishRate =
+        this.stats.saved > 0 ? (this.stats.published / this.stats.saved) * 100 : 0
+      console.log(`📱 Taux publication Instagram: ${publishRate.toFixed(1)}%`)
+    }
+
+    console.log("=".repeat(35))
   }
 
   // Getters pour les tests

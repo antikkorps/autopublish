@@ -18,6 +18,7 @@ import "./src/models/User.js"
 import authRoutes from "./src/routes/authRoutes.js"
 import citationRoutes from "./src/routes/citationRoutes.js"
 import imageRoutes from "./src/routes/imageRoutes.js"
+import instagramRoutes from "./src/routes/instagramRoutes.js"
 import postRoutes from "./src/routes/postRoutes.js"
 
 // Import des middlewares de sécurité
@@ -53,7 +54,7 @@ app.use(
 
       return false
     },
-    allowedMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization", "X-API-Key"],
     credentials: true,
     maxAge: 86400, // 24 heures
@@ -77,6 +78,7 @@ router.use("/api/auth", authRoutes.routes())
 router.use("/api/citations", citationRoutes.routes())
 router.use("/api/posts", postRoutes.routes())
 router.use("/api/images", imageRoutes.routes())
+router.use("/api/instagram", instagramRoutes.routes())
 
 // Route de santé sécurisée
 router.get("/api/health", async (ctx: any) => {

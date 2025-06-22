@@ -11,9 +11,9 @@ process.env.JWT_REFRESH_SECRET = "test_jwt_refresh_secret_key_123456789"
 
 // Mock de tous les modules externes avant leur import
 jest.mock("../src/config/database", () => ({
-  sync: jest.fn().mockResolvedValue(undefined),
-  authenticate: jest.fn().mockResolvedValue(undefined),
-  close: jest.fn().mockResolvedValue(undefined),
+  sync: jest.fn().mockResolvedValue(null),
+  authenticate: jest.fn().mockResolvedValue(null),
+  close: jest.fn().mockResolvedValue(null),
   define: jest.fn(),
   models: {},
 }))

@@ -1,4 +1,4 @@
-import jwt from "jsonwebtoken"
+import * as jwt from "jsonwebtoken"
 import User from "../models/User"
 
 interface JWTPayload {
@@ -23,7 +23,7 @@ class AuthService {
 
   constructor() {
     this.accessTokenSecret =
-      process.env.JWT_ACCESS_SECRET || "dev-access-secret-change-in-production"
+      process.env.JWT_SECRET || "dev-access-secret-change-in-production"
     this.refreshTokenSecret =
       process.env.JWT_REFRESH_SECRET || "dev-refresh-secret-change-in-production"
 
@@ -47,15 +47,11 @@ class AuthService {
 
     const accessToken = jwt.sign(payload, this.accessTokenSecret, {
       expiresIn: this.accessTokenExpiry,
-      issuer: "autopublish-api",
-      audience: "autopublish-client",
-    })
+    } as jwt.SignOptions)
 
     const refreshToken = jwt.sign({ userId: user.id }, this.refreshTokenSecret, {
       expiresIn: this.refreshTokenExpiry,
-      issuer: "autopublish-api",
-      audience: "autopublish-client",
-    })
+    } as jwt.SignOptions)
 
     return {
       accessToken,
@@ -69,11 +65,7 @@ class AuthService {
    */
   verifyAccessToken(token: string): JWTPayload | null {
     try {
-      const decoded = jwt.verify(token, this.accessTokenSecret, {
-        issuer: "autopublish-api",
-        audience: "autopublish-client",
-      }) as JWTPayload
-
+      const decoded = jwt.verify(token, this.accessTokenSecret) as JWTPayload
       return decoded
     } catch (error) {
       if (error instanceof jwt.TokenExpiredError) {
@@ -90,11 +82,7 @@ class AuthService {
    */
   verifyRefreshToken(token: string): { userId: number } | null {
     try {
-      const decoded = jwt.verify(token, this.refreshTokenSecret, {
-        issuer: "autopublish-api",
-        audience: "autopublish-client",
-      }) as { userId: number }
-
+      const decoded = jwt.verify(token, this.refreshTokenSecret) as { userId: number }
       return decoded
     } catch (error) {
       return null
@@ -258,7 +246,7 @@ class AuthService {
         return false
       }
 
-      await user.update({ apiKey: null })
+      await user.update({ apiKey: undefined })
       return true
     } catch (error) {
       console.error("Erreur lors de la révocation de l'API key:", error)
