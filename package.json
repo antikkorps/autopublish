@@ -13,6 +13,10 @@
     "test:instagram:service": "jest tests/__tests__/services/instagramService.test.ts",
     "test:instagram:controller": "jest tests/__tests__/controllers/instagramController.test.ts",
     "test:instagram:integration": "jest tests/__tests__/integration/instagramIntegration.test.ts",
+    "diagnostic": "tsx scripts/diagnosticComplet.ts",
+    "test:workflow": "tsx scripts/testWorkflow.ts",
+    "test:images": "tsx scripts/testImagesFonds.ts",
+    "test:unsplash": "tsx scripts/testUnsplash.ts",
     "cron:setup": "chmod +x scripts/setupCron.sh && ./scripts/setupCron.sh"
   },
   "dependencies": {

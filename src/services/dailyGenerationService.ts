@@ -207,7 +207,7 @@ export class DailyGenerationService {
       const variations = await imageService.generateVariations(citationData, [
         "minimal",
         "gradient",
-        "modern",
+        "photo",
       ])
 
       if (variations.length > 0) {

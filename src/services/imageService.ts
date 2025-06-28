@@ -1,4 +1,4 @@
-import { CanvasRenderingContext2D, createCanvas } from "canvas"
+import { CanvasRenderingContext2D, createCanvas, loadImage } from "canvas"
 import { promises as fs } from "fs"
 import path from "path"
 import sharp from "sharp"
@@ -6,13 +6,14 @@ import sharp from "sharp"
 export interface ImageGenerationOptions {
   width?: number
   height?: number
-  template?: "minimal" | "gradient" | "modern" | "elegant"
+  template?: "minimal" | "gradient" | "modern" | "elegant" | "photo"
   theme?: string
   backgroundColor?: string
   textColor?: string
   accentColor?: string
   includeAuthor?: boolean
   includeBranding?: boolean
+  unsplashQuery?: string
 }
 
 export interface GeneratedImage {
@@ -130,6 +131,9 @@ class ImageService {
         break
       case "elegant":
         await this.applyElegantTemplate(ctx, citation, options)
+        break
+      case "photo":
+        await this.applyPhotoTemplate(ctx, citation, options)
         break
       default:
         await this.applyMinimalTemplate(ctx, citation, options)
@@ -331,6 +335,102 @@ class ImageService {
   }
 
   /**
+   * Template photo avec image Unsplash
+   */
+  private async applyPhotoTemplate(
+    ctx: CanvasRenderingContext2D,
+    citation: CitationData,
+    options: ImageGenerationOptions & { width: number; height: number }
+  ) {
+    const { width, height, unsplashQuery } = options
+
+    try {
+      if (!unsplashQuery) {
+        // Fallback vers template minimal si pas d'image
+        await this.applyMinimalTemplate(ctx, citation, options)
+        return
+      }
+
+      // Charger l'image de fond depuis Unsplash
+      const backgroundImage = await loadImage(unsplashQuery)
+
+      // Dessiner l'image de fond (redimensionnée pour couvrir tout le canvas)
+      ctx.drawImage(backgroundImage, 0, 0, width, height)
+
+      // Ajouter un overlay semi-transparent pour améliorer la lisibilité
+      const overlayOpacity = 0.6
+      ctx.fillStyle = `rgba(0, 0, 0, ${overlayOpacity})`
+      ctx.fillRect(0, 0, width, height)
+
+      // Configuration du texte (couleurs adaptées pour la lisibilité sur photo)
+      const padding = 80
+      const maxWidth = width - padding * 2
+
+      // Citation principale
+      ctx.fillStyle = "#FFFFFF" // Blanc pour contraster avec l'overlay
+      ctx.textAlign = "center"
+      ctx.textBaseline = "middle"
+
+      // Calculer la taille de police adaptée
+      const fontSize = this.calculateFontSize(ctx, citation.content, maxWidth, 300)
+      ctx.font = `bold ${fontSize}px "Arial", sans-serif`
+
+      // Ajouter une ombre au texte pour plus de lisibilité
+      ctx.shadowColor = "rgba(0, 0, 0, 0.8)"
+      ctx.shadowBlur = 4
+      ctx.shadowOffsetX = 2
+      ctx.shadowOffsetY = 2
+
+      // Dessiner la citation avec retour à la ligne
+      const lines = this.wrapText(ctx, citation.content, maxWidth)
+      const lineHeight = fontSize * 1.4
+      const totalTextHeight = lines.length * lineHeight
+
+      let startY = (height - totalTextHeight) / 2
+
+      // Ajouter les guillemets
+      ctx.font = `bold ${fontSize * 1.5}px "Arial", sans-serif`
+      ctx.fillStyle = "#FFD700" // Doré pour les guillemets
+      ctx.fillText('"', width / 2 - maxWidth / 2, startY - fontSize / 2)
+      ctx.fillText('"', width / 2 + maxWidth / 2, startY + totalTextHeight + fontSize / 2)
+
+      // Texte principal
+      ctx.font = `bold ${fontSize}px "Arial", sans-serif`
+      ctx.fillStyle = "#FFFFFF"
+
+      lines.forEach((line, index) => {
+        const y = startY + index * lineHeight
+        ctx.fillText(line, width / 2, y)
+      })
+
+      // Auteur (si présent)
+      if (options.includeAuthor && citation.author) {
+        const authorY = startY + totalTextHeight + 60
+        ctx.font = `${fontSize * 0.6}px "Arial", sans-serif`
+        ctx.fillStyle = "#FFD700" // Doré pour l'auteur
+        ctx.fillText(`— ${citation.author}`, width / 2, authorY)
+      }
+
+      // Réinitialiser l'ombre
+      ctx.shadowColor = "transparent"
+      ctx.shadowBlur = 0
+      ctx.shadowOffsetX = 0
+      ctx.shadowOffsetY = 0
+
+      // Branding (si activé)
+      if (options.includeBranding) {
+        ctx.font = '24px "Arial", sans-serif'
+        ctx.fillStyle = "rgba(255, 255, 255, 0.7)"
+        ctx.fillText("AutoPublish", width / 2, height - 40)
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement de l'image de fond:", error)
+      // Fallback vers template minimal en cas d'erreur
+      await this.applyMinimalTemplate(ctx, citation, options)
+    }
+  }
+
+  /**
    * Calcule la taille de police optimale pour le texte
    */
   private calculateFontSize(
@@ -455,17 +555,30 @@ class ImageService {
    */
   async generateVariations(
     citation: CitationData,
-    templates: string[] = ["minimal", "gradient", "modern", "elegant"]
+    templates: string[] = ["minimal", "gradient", "photo"]
   ): Promise<GeneratedImage[]> {
     const variations: GeneratedImage[] = []
 
     for (const template of templates) {
       try {
-        const image = await this.generateImage(citation, {
+        let options: ImageGenerationOptions = {
           template: template as any,
           includeAuthor: true,
           includeBranding: true,
-        })
+        }
+
+        // Si c'est le template photo, récupérer une image Unsplash
+        if (template === "photo") {
+          const unsplashUrl = await this.getUnsplashImageUrl(citation.theme)
+          if (unsplashUrl) {
+            options.unsplashQuery = unsplashUrl
+          } else {
+            // Fallback vers template gradient si pas d'image Unsplash
+            options.template = "gradient"
+          }
+        }
+
+        const image = await this.generateImage(citation, options)
         variations.push(image)
       } catch (error) {
         console.error(`Erreur lors de la génération du template ${template}:`, error)
@@ -500,6 +613,77 @@ class ImageService {
       console.error("Erreur lors du nettoyage:", error)
       return 0
     }
+  }
+
+  /**
+   * Récupère une URL d'image Unsplash adaptée au thème
+   */
+  private async getUnsplashImageUrl(
+    theme: string,
+    width: number = 1080,
+    height: number = 1080
+  ): Promise<string | null> {
+    const accessKey = process.env.UNSPLASH_ACCESS_KEY
+    if (!accessKey) {
+      console.warn("Clé Unsplash manquante, utilisation du template par défaut")
+      return null
+    }
+
+    try {
+      // Mapper les thèmes vers des mots-clés Unsplash appropriés
+      const themeKeywords = this.getUnsplashKeywords(theme)
+      const query = themeKeywords.join(",")
+      const url = `https://api.unsplash.com/photos/random?query=${encodeURIComponent(
+        query
+      )}&orientation=squarish`
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Client-ID ${accessKey}`,
+        },
+      })
+
+      if (!response.ok) {
+        console.warn(`Erreur Unsplash: ${response.status}`)
+        return null
+      }
+
+      const data = await response.json()
+
+      // Construire l'URL avec les dimensions personnalisées
+      const baseUrl = data.urls?.regular
+      if (baseUrl) {
+        return `${baseUrl}&w=${width}&h=${height}&fit=crop`
+      }
+
+      return data.urls?.regular || null
+    } catch (error) {
+      console.error("Erreur lors de la récupération d'image Unsplash:", error)
+      return null
+    }
+  }
+
+  /**
+   * Convertit un thème en mots-clés Unsplash appropriés
+   */
+  private getUnsplashKeywords(theme: string): string[] {
+    const keywordMap: Record<string, string[]> = {
+      motivation: ["motivation", "success", "mountain"],
+      inspiration: ["inspiration", "nature", "sky"],
+      sagesse: ["wisdom", "books", "meditation"],
+      amour: ["love", "heart", "sunset"],
+      vie: ["life", "nature", "growth"],
+      succès: ["success", "business", "achievement"],
+      bonheur: ["happiness", "joy", "sunshine"],
+      courage: ["courage", "mountain", "adventure"],
+      espoir: ["hope", "light", "dawn"],
+      paix: ["peace", "calm", "zen"],
+      rêves: ["dreams", "stars", "sky"],
+      liberté: ["freedom", "birds", "sky"],
+    }
+
+    // Retourner les mots-clés pour le thème, ou des mots-clés génériques
+    return keywordMap[theme.toLowerCase()] || ["inspiration", "nature"]
   }
 }
 
