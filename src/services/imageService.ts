@@ -553,6 +553,30 @@ class ImageService {
         accent: "#2b77ad",
         muted: "#4a90b8",
       },
+      parentalite: {
+        background: "#f8f4e6",
+        text: "#2d4a22",
+        accent: "#66bb6a",
+        muted: "#7cb342",
+      },
+      education: {
+        background: "#e3f2fd",
+        text: "#1a237e",
+        accent: "#1976d2",
+        muted: "#42a5f5",
+      },
+      famille: {
+        background: "#fff3e0",
+        text: "#bf360c",
+        accent: "#ff8a65",
+        muted: "#ff7043",
+      },
+      enfance: {
+        background: "#fce4ec",
+        text: "#880e4f",
+        accent: "#f06292",
+        muted: "#ec407a",
+      },
       default: {
         background: "#ffffff",
         text: "#333333",
@@ -645,7 +669,25 @@ class ImageService {
 
     try {
       // Mapper les thèmes vers des mots-clés Unsplash appropriés
-      const themeKeywords = this.getUnsplashKeywords(theme)
+      const keywordMap: Record<string, string[]> = {
+        motivation: ["motivation", "success", "mountain"],
+        inspiration: ["inspiration", "nature", "sky"],
+        sagesse: ["wisdom", "books", "meditation"],
+        amour: ["love", "heart", "sunset"],
+        vie: ["life", "nature", "growth"],
+        succès: ["success", "business", "achievement"],
+        bonheur: ["happiness", "joy", "sunshine"],
+        courage: ["courage", "mountain", "adventure"],
+        espoir: ["hope", "light", "dawn"],
+        paix: ["peace", "calm", "zen"],
+        rêves: ["dreams", "stars", "sky"],
+        liberté: ["freedom", "birds", "sky"],
+        parentalite: ["family", "parent", "children"],
+        education: ["education", "learning", "children"],
+        famille: ["family", "together", "home"],
+        enfance: ["childhood", "children", "playground"],
+      }
+      const themeKeywords = keywordMap[theme.toLowerCase()] || ["inspiration", "nature"]
       const query = themeKeywords.join(",")
       const url = `https://api.unsplash.com/photos/random?query=${encodeURIComponent(
         query
@@ -675,29 +717,6 @@ class ImageService {
       console.error("Erreur lors de la récupération d'image Unsplash:", error)
       return null
     }
-  }
-
-  /**
-   * Convertit un thème en mots-clés Unsplash appropriés
-   */
-  private getUnsplashKeywords(theme: string): string[] {
-    const keywordMap: Record<string, string[]> = {
-      motivation: ["motivation", "success", "mountain"],
-      inspiration: ["inspiration", "nature", "sky"],
-      sagesse: ["wisdom", "books", "meditation"],
-      amour: ["love", "heart", "sunset"],
-      vie: ["life", "nature", "growth"],
-      succès: ["success", "business", "achievement"],
-      bonheur: ["happiness", "joy", "sunshine"],
-      courage: ["courage", "mountain", "adventure"],
-      espoir: ["hope", "light", "dawn"],
-      paix: ["peace", "calm", "zen"],
-      rêves: ["dreams", "stars", "sky"],
-      liberté: ["freedom", "birds", "sky"],
-    }
-
-    // Retourner les mots-clés pour le thème, ou des mots-clés génériques
-    return keywordMap[theme.toLowerCase()] || ["inspiration", "nature"]
   }
 }
 

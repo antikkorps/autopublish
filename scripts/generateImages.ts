@@ -27,6 +27,10 @@ const themes = [
   "inspiration",
   "vie",
   "philosophie",
+  "parentalite",
+  "education",
+  "famille",
+  "enfance",
 ]
 
 async function generateImages(options: GenerateOptions = {}) {

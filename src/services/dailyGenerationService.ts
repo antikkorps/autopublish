@@ -22,13 +22,15 @@ export interface DailyConfig {
 
 // Configuration par défaut pour la génération quotidienne
 export const DEFAULT_CONFIG: DailyConfig = {
-  totalCitations: 10, // 10 citations par jour
+  totalCitations: 12, // 12 citations par jour pour inclure les nouveaux thèmes
   themes: {
     motivation: { count: 3, style: "motivational" },
     wisdom: { count: 2, style: "philosophical" },
     success: { count: 2, style: "practical" },
     life: { count: 2, style: "inspirational" },
     love: { count: 1, style: "inspirational" },
+    parentalite: { count: 1, style: "inspirational" },
+    famille: { count: 1, style: "philosophical" },
   },
   language: "fr",
   minQualityScore: 0.6,

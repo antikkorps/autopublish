@@ -101,6 +101,10 @@ class CitationController {
         "leadership",
         "mindfulness",
         "creativity",
+        "parentalite",
+        "education",
+        "famille",
+        "enfance",
       ]
       if (!validThemes.includes(theme)) {
         ctx.status = 400

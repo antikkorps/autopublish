@@ -155,6 +155,12 @@ class AIService {
       leadership: "citations sur le leadership, la direction et l'influence",
       mindfulness: "citations sur la pleine conscience et la méditation",
       creativity: "citations sur la créativité, l'art et l'innovation",
+      parentalite: "citations sur la parentalité, être parent et élever des enfants",
+      education:
+        "citations sur l'éducation des enfants, l'apprentissage et la transmission",
+      famille:
+        "citations sur la famille, les liens familiaux et les relations parent-enfant",
+      enfance: "citations sur l'enfance, le développement des enfants et leurs besoins",
     }
 
     const styleInstructions = {
