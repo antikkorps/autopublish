@@ -15,8 +15,7 @@
     "test:instagram:integration": "jest tests/__tests__/integration/instagramIntegration.test.ts",
     "diagnostic": "tsx scripts/diagnosticComplet.ts",
     "test:workflow": "tsx scripts/testWorkflow.ts",
-    "test:images": "tsx scripts/testImagesFonds.ts",
-    "test:unsplash": "tsx scripts/testUnsplash.ts",
+    "generate-images": "tsx scripts/generateImages.ts",
     "cron:setup": "chmod +x scripts/setupCron.sh && ./scripts/setupCron.sh"
   },
   "dependencies": {

@@ -70,12 +70,26 @@ class ImageService {
       includeBranding = true,
     } = options
 
+    // Si c'est le template photo et qu'aucune unsplashQuery n'est fournie, en récupérer une
+    let finalOptions = { ...options }
+    if (template === "photo" && !options.unsplashQuery) {
+      console.log("🔍 Recherche d'une image Unsplash pour le thème:", citation.theme)
+      const unsplashUrl = await this.getUnsplashImageUrl(citation.theme, width, height)
+      if (unsplashUrl) {
+        finalOptions.unsplashQuery = unsplashUrl
+        console.log("📸 Image Unsplash trouvée")
+      } else {
+        console.log("⚠️  Pas d'image Unsplash trouvée, utilisation du template gradient")
+        finalOptions.template = "gradient"
+      }
+    }
+
     // Créer le canvas
     const canvas = createCanvas(width, height)
     const ctx = canvas.getContext("2d")
 
     // Appliquer le template choisi
-    await this.applyTemplate(ctx, citation, { ...options, width, height })
+    await this.applyTemplate(ctx, citation, { ...finalOptions, width, height })
 
     // Générer le nom de fichier unique
     const timestamp = Date.now()
@@ -99,7 +113,7 @@ class ImageService {
       metadata: {
         width,
         height,
-        template,
+        template: finalOptions.template || template,
         theme: citation.theme,
         format: "png",
       },

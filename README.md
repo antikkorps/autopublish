@@ -5,9 +5,9 @@
 ## 📋 Table des Matières
 
 - [Fonctionnalités](#-fonctionnalités)
-- [Technologies](#-technologies)
+- [Technologies](#️-technologies)
 - [Installation](#-installation)
-- [Configuration](#-configuration)
+- [Configuration](#️-configuration)
 - [Utilisation](#-utilisation)
 - [Scripts d'Automatisation](#-scripts-dautomatisation)
 - [Tests](#-tests)
@@ -51,7 +51,7 @@
 
 ## 🛠 Technologies
 
-**Backend**
+### Backend
 
 - Node.js + TypeScript
 - Express.js avec middleware de sécurité
@@ -59,21 +59,21 @@
 - JWT pour l'authentification
 - Joi pour la validation
 
-**IA & Images**
+### IA & Images
 
 - OpenAI API pour la génération de texte
 - Canvas/Sharp pour la génération d'images
 - Templates personnalisables
 - Optimisation automatique
 
-**Tests & Qualité**
+### Tests & Qualité
 
 - Jest avec couverture complète (100% sur les services)
 - Tests unitaires et d'intégration
 - Mocks sophistiqués
 - CI/CD ready
 
-**DevOps**
+### DevOps
 
 - Scripts d'automatisation Bash
 - Configuration cron
@@ -198,6 +198,63 @@ npm run generate:daily -- --count 20 --no-images --quality 0.8
 
 # Configuration cron automatique
 npm run cron:setup
+```
+
+### 🎨 Génération d'Images Manuelle
+
+Le script `generate-images` permet de créer des images avec citations de façon interactive :
+
+```bash
+# Génération simple (1 image avec template photo)
+npm run generate-images
+
+# Afficher l'aide complète
+npm run generate-images -- --help
+
+# Générer sans sauvegarder en base de données
+npm run generate-images -- --no-db
+
+# Générer 5 images avec template minimal
+npm run generate-images -- --count 5 --template minimal
+
+# Thème sagesse avec template elegant
+npm run generate-images -- --theme sagesse --template elegant
+
+# Mode test : 3 images sans base de données
+npm run generate-images -- --count 3 --no-db --template photo
+```
+
+**Options disponibles :**
+
+- `--count <nombre>` : Nombre d'images (1-20, défaut: 1)
+- `--template <nom>` : Template à utiliser (minimal, gradient, photo, modern, elegant)
+- `--theme <nom>` : Thème des citations (motivation, sagesse, amour, success, bonheur, inspiration, vie, philosophie)
+- `--no-db` : Ne pas sauvegarder en base de données
+- `--help` : Afficher l'aide détaillée
+
+**Workflow du script :**
+
+1. 🤖 **IA génère** une citation sur le thème choisi (OpenAI)
+2. 🖼️ **Unsplash** fournit une image de fond (si template "photo")
+3. 🎨 **Création** de l'image finale avec citation superposée
+4. 💾 **Sauvegarde** du fichier dans `public/images/generated/`
+5. 📊 **Optionnel** : Enregistrement en base de données
+
+**Cas d'usage :**
+
+- **Test rapide** : `--no-db` pour tester templates/thèmes
+- **Production de contenu** : Génération en lot avec sauvegarde BDD
+- **Prototypage** : Essayer différents styles visuels
+- **Contenu personnalisé** : Créer des variations pour des thèmes spécifiques
+
+### Diagnostic et Tests
+
+```bash
+# Diagnostic complet du système
+npm run diagnostic
+
+# Test du workflow complet
+npm run test:workflow
 ```
 
 ### Maintenance
