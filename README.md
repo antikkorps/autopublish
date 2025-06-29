@@ -232,6 +232,23 @@ npm run generate-images -- --count 3 --no-db --template photo
 - `--no-db` : Ne pas sauvegarder en base de données
 - `--help` : Afficher l'aide détaillée
 
+**Themes disponibles :**
+
+- "parentalite",
+- "parent",
+- "enfants",
+- "famille",
+- "education",
+- "amourparental",
+- "elever",
+- "maternite",
+
+**exemple de commande :**
+
+```bash
+npm run generate-images -- --theme parentalite --template photo --count 2 --no-db
+```
+
 **Workflow du script :**
 
 1. 🤖 **IA génère** une citation sur le thème choisi (OpenAI)
