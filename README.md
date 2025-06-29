@@ -239,7 +239,6 @@ npm run generate-images -- --count 3 --no-db --template photo
 - "enfants",
 - "famille",
 - "education",
-- "amourparental",
 - "elever",
 - "maternite",
 

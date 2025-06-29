@@ -117,6 +117,7 @@ Thumbs.db
 public/images/generated/*.png
 public/images/generated/*.jpg
 public/images/generated/*.jpeg
+public/images/generated/archive/*
 
 # Database files (if using SQLite for development)
 *.sqlite
