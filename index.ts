@@ -20,6 +20,7 @@ import citationRoutes from "./src/routes/citationRoutes.js"
 import imageRoutes from "./src/routes/imageRoutes.js"
 import instagramRoutes from "./src/routes/instagramRoutes.js"
 import postRoutes from "./src/routes/postRoutes.js"
+import videoRoutes from "./src/routes/videoRoutes.js"
 
 // Import des middlewares de sécurité
 import { optionalAuthMiddleware } from "./src/middleware/authMiddleware.js"
@@ -79,6 +80,7 @@ router.use("/api/citations", citationRoutes.routes())
 router.use("/api/posts", postRoutes.routes())
 router.use("/api/images", imageRoutes.routes())
 router.use("/api/instagram", instagramRoutes.routes())
+router.use("/api/videos", videoRoutes.routes())
 
 // Route de santé sécurisée
 router.get("/api/health", async (ctx: any) => {

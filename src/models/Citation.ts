@@ -17,6 +17,8 @@ interface CitationAttributes {
   metadata?: object
   imagePath?: string
   imageMetadata?: object
+  videoPath?: string
+  videoMetadata?: object
 }
 
 interface CitationCreationAttributes
@@ -30,6 +32,8 @@ interface CitationCreationAttributes
     | "metadata"
     | "imagePath"
     | "imageMetadata"
+    | "videoPath"
+    | "videoMetadata"
   > {}
 
 class Citation
@@ -52,6 +56,8 @@ class Citation
   declare metadata?: object
   declare imagePath?: string
   declare imageMetadata?: object
+  declare videoPath?: string
+  declare videoMetadata?: object
 
   declare readonly createdAt: Date
   declare readonly updatedAt: Date
@@ -151,6 +157,14 @@ Citation.init(
       allowNull: true,
     },
     imageMetadata: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
+    videoPath: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    videoMetadata: {
       type: DataTypes.JSON,
       allowNull: true,
     },
