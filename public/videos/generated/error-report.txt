@@ -1,0 +1,19 @@
+
+❌ RAPPORT D'ERREUR - GÉNÉRATION VIDÉO
+=======================================
+
+📅 Date: 09/07/2025 23:08:54
+❌ Statut: ÉCHEC
+
+🔍 ERREUR
+---------
+Error: ffmpeg exited with code 1: Stream specifier ':a' in filtergraph description [1:a]volume=0.3[music];[0:a][music]amix=inputs=2:duration=first[aout] matches no streams.
+
+
+📋 STACK TRACE
+--------------
+Error: ffmpeg exited with code 1: Stream specifier ':a' in filtergraph description [1:a]volume=0.3[music];[0:a][music]amix=inputs=2:duration=first[aout] matches no streams.
+
+    at ChildProcess.<anonymous> (/Users/franck/Documents/autopublish/node_modules/fluent-ffmpeg/lib/processor.js:180:22)
+    at ChildProcess.emit (node:events:518:28)
+    at ChildProcess._handle.onexit (node:internal/child_process:293:12)

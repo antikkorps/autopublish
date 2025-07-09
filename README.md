@@ -31,6 +31,7 @@
 - 10+ thèmes disponibles (motivation, sagesse, succès, vie, amour...)
 - Filtrage qualité automatique
 - Génération d'images avec templates personnalisables
+- **🎬 Génération de vidéos courtes (30s) pour réseaux sociaux**
 - Variations multiples par citation
 
 ### 📊 Gestion de Contenu
@@ -59,10 +60,11 @@
 - JWT pour l'authentification
 - Joi pour la validation
 
-### IA & Images
+### IA & Médias
 
 - OpenAI API pour la génération de texte
 - Canvas/Sharp pour la génération d'images
+- **FFmpeg pour la génération de vidéos**
 - Templates personnalisables
 - Optimisation automatique
 
@@ -165,6 +167,7 @@ DELETE /api/citations/:id  # Supprimer une citation
 # Génération
 POST /api/citations/generate  # Générer via IA
 POST /api/images/generate     # Générer des images
+POST /api/videos/generate     # Générer des vidéos
 ```
 
 ### Exemple d'utilisation
@@ -222,6 +225,27 @@ npm run generate-images -- --theme sagesse --template elegant
 
 # Mode test : 3 images sans base de données
 npm run generate-images -- --count 3 --no-db --template photo
+```
+
+### 🎬 Génération de Vidéos Manuelle
+
+Le script `generate-videos` permet de créer des vidéos courtes avec citations :
+
+```bash
+# Génération simple (1 vidéo Instagram)
+npm run generate-videos
+
+# Afficher l'aide complète
+npm run generate-videos -- --help
+
+# Vidéo TikTok avec effet typewriter
+npm run generate-videos -- --format tiktok --animation typewriter
+
+# Vidéo carrée pour parentalité
+npm run generate-videos -- --theme parentalite --format square
+
+# Mode test : 1 vidéo sans base de données
+npm run generate-videos -- --count 1 --no-db --animation slide-in
 ```
 
 **Options disponibles :**

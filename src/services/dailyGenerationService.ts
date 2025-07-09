@@ -4,6 +4,7 @@ import Post from "../models/Post"
 import aiService from "./aiService"
 import imageService from "./imageService"
 import instagramService, { InstagramCredentials } from "./instagramService"
+import videoService from "./videoService"
 
 export interface DailyConfig {
   totalCitations: number
@@ -16,6 +17,7 @@ export interface DailyConfig {
   language: string
   minQualityScore: number
   generateImages: boolean
+  generateVideos: boolean
   publishToInstagram: boolean
   instagramCredentials?: InstagramCredentials
 }
@@ -35,6 +37,7 @@ export const DEFAULT_CONFIG: DailyConfig = {
   language: "fr",
   minQualityScore: 0.6,
   generateImages: true,
+  generateVideos: false, // Désactivé par défaut car plus coûteux
   publishToInstagram: false, // Désactivé par défaut
 }
 
@@ -45,6 +48,7 @@ export class DailyGenerationService {
     saved: 0,
     failed: 0,
     withImages: 0,
+    withVideos: 0,
     published: 0,
     publishFailed: 0,
   }
@@ -80,6 +84,7 @@ export class DailyGenerationService {
       saved: 0,
       failed: 0,
       withImages: 0,
+      withVideos: 0,
       published: 0,
       publishFailed: 0,
     }
@@ -178,6 +183,11 @@ export class DailyGenerationService {
         await this.generateImages(citation)
       }
 
+      // Générer les vidéos si configuré
+      if (this.config.generateVideos) {
+        await this.generateVideos(citation)
+      }
+
       // Publier sur Instagram si configuré
       if (
         this.config.publishToInstagram &&
@@ -234,6 +244,40 @@ export class DailyGenerationService {
     } catch (error) {
       console.error(`   ❌ Erreur génération images:`, error)
       // Ne pas faire échouer le processus pour une erreur d'image
+    }
+  }
+
+  private async generateVideos(citation: Citation): Promise<void> {
+    try {
+      console.log(`   🎬 Génération de vidéo pour citation ${citation.id}`)
+
+      const citationData = {
+        content: citation.content,
+        author: citation.author,
+        theme: citation.theme,
+        hashtags: citation.hashtags,
+      }
+
+      // Générer une vidéo Instagram par défaut
+      const video = await videoService.generateVideo(citationData, {
+        duration: 30,
+        format: "instagram",
+        animation: "fade-in",
+        background: "gradient",
+        quality: "medium",
+      })
+
+      // Mettre à jour la citation avec le chemin de la vidéo
+      await citation.update({
+        videoPath: video.path,
+        videoMetadata: video.metadata,
+      })
+
+      console.log(`   🎥 Vidéo générée: ${video.filename} (${video.metadata.duration}s)`)
+      this.stats.withVideos++
+    } catch (error) {
+      console.error(`   ❌ Erreur génération vidéo:`, error)
+      // Ne pas faire échouer le processus pour une erreur de vidéo
     }
   }
 
@@ -319,6 +363,7 @@ export class DailyGenerationService {
     console.log(`📝 Citations générées: ${this.stats.generated}`)
     console.log(`💾 Citations sauvées: ${this.stats.saved}`)
     console.log(`🖼️  Avec images: ${this.stats.withImages}`)
+    console.log(`🎬 Avec vidéos: ${this.stats.withVideos}`)
 
     if (this.config.publishToInstagram) {
       console.log(`📱 Publiées Instagram: ${this.stats.published}`)
