@@ -16,6 +16,7 @@
     "diagnostic": "tsx scripts/diagnosticComplet.ts",
     "test:workflow": "tsx scripts/testWorkflow.ts",
     "generate-images": "tsx scripts/generateImages.ts",
+    "generate-images:api": "tsx scripts/generateImageWithApiQuote.ts",
     "generate-videos": "tsx scripts/generateVideos.ts",
     "cron:setup": "chmod +x scripts/setupCron.sh && ./scripts/setupCron.sh"
   },
