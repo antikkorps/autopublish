@@ -443,3 +443,11 @@ MIT License - voir [LICENSE](LICENSE) pour plus de détails.
 ---
 
 **⭐ Si ce projet vous aide, n'hésitez pas à lui donner une étoile !**
+
+---
+
+Exemple de génération de photo:
+
+```basch
+npm run generate-images motivation photo 1
+```
